@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useDeferredValue } from 'react';
+import { useState, useEffect, useMemo, useRef, useDeferredValue, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion, AnimatePresence, useInView } from 'motion/react';
 import {
   ArrowUp,
@@ -61,6 +62,7 @@ import { useMediaGenerationStore } from '@/lib/store/media-generation';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDraftCache } from '@/lib/hooks/use-draft-cache';
+import { useAuthStore } from '@/lib/store/auth';
 import { SpeechButton } from '@/components/audio/speech-button';
 import { useImportClassroom } from '@/lib/import/use-import-classroom';
 
@@ -90,6 +92,13 @@ function HomePage() {
   const router = useRouter();
   const [form, setForm] = useState<FormState>(initialFormState);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const username = useAuthStore((s) => s.username);
+  const logout = useAuthStore((s) => s.logout);
+  const userInitial = username ? username.charAt(0).toUpperCase() : '?';
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuDropdownRef = useRef<HTMLDivElement>(null);
   const [settingsSection, setSettingsSection] = useState<
     import('@/lib/types/settings').SettingsSection | undefined
   >(undefined);
@@ -187,6 +196,18 @@ function HomePage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [themeOpen]);
+
+  // Close user menu on outside click
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [userMenuOpen]);
 
   const loadClassrooms = async () => {
     try {
@@ -443,12 +464,12 @@ function HomePage() {
       {/* ─── Top Navigation Bar ─── */}
       <nav className="fixed top-0 left-0 right-0 z-50 h-14 bg-black/40 backdrop-blur-xl border-b border-white/[0.05]">
         <div className="max-w-7xl mx-auto h-full px-4 md:px-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <div className="size-8 rounded-lg bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
               <span className="text-white text-xs font-bold">AI</span>
             </div>
             <span className="text-white/90 font-semibold text-sm tracking-wide">开智课程</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
@@ -466,6 +487,55 @@ function HomePage() {
             >
               功能介绍
             </button>
+            <div className="hidden md:flex items-center gap-1">
+              {isLoggedIn ? (
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/60 hover:text-white/90 hover:bg-white/5 transition-all"
+                  >
+                    <div className="size-5 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
+                      <span className="text-white text-[8px] font-bold">
+                        {userInitial}
+                      </span>
+                    </div>
+                    <span>{username}</span>
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                  {userMenuOpen && (
+                    <div
+                      ref={userMenuDropdownRef}
+                      className="absolute top-full mt-2 right-0 bg-gray-900 border border-white/10 rounded-lg shadow-lg overflow-hidden z-50 min-w-[140px]"
+                    >
+                      <div className="px-3 py-2 text-xs text-white/40 border-b border-white/5">
+                        已登录
+                      </div>
+                      <button
+                        onClick={() => { logout(); setUserMenuOpen(false); }}
+                        className="w-full px-3 py-2 text-left text-xs text-white/60 hover:bg-white/5 transition-colors"
+                      >
+                        退出登录
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="px-3 py-1.5 text-xs text-white/60 hover:text-white/90 transition-colors"
+                  >
+                    登录
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-cyan-500 text-white text-xs font-medium hover:shadow-[0_0_20px_rgba(114,46,209,0.3)] transition-all"
+                  >
+                    注册
+                  </Link>
+                </>
+              )}
+            </div>
             <div className="flex items-center gap-1 pl-2 border-l border-white/10">
               <LanguageSwitcher />
               <div ref={themeDropdownRef} className="relative">
@@ -692,7 +762,70 @@ function HomePage() {
         </div>
       </section>
 
+      {/* ─── Download App Section ─── */}
+      <section className="relative z-10 py-16 md:py-24 px-4 w-full">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-900/40 via-slate-900/60 to-cyan-900/30 border border-white/[0.08] p-8 md:p-12"
+          >
+            {/* Background glow */}
+            <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-purple-500/10 blur-[80px]" />
+            <div className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full bg-cyan-500/10 blur-[80px]" />
 
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+              <div className="flex-1 text-center md:text-left">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4 }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/50 text-xs mb-4"
+                >
+                  <span className="size-1.5 rounded-full bg-green-400 animate-pulse" />
+                  移动端已就绪
+                </motion.div>
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
+                  下载 AI 课程 App
+                </h3>
+                <p className="text-sm text-white/40 max-w-md leading-relaxed mb-6">
+                  随时随地学习，离线访问课程内容
+                  <br />
+                  支持 Android 平台，手机和平板均可使用
+                </p>
+                <a
+                  href="/AIclass.apk"
+                  download
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-black font-medium text-sm hover:bg-white/90 transition-all active:scale-95 shadow-lg"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.523 16.397c-.497.738-1.063 1.486-1.918 1.502-.854.015-1.13-.507-2.106-.507-.976 0-1.28.49-2.087.523-.807.032-1.423-.798-1.923-1.532-1.047-1.513-1.848-4.277-.773-6.146.534-.93 1.488-1.518 2.522-1.533.79-.015 1.536.533 2.02.533.483 0 1.387-.66 2.338-.563.398.016 1.515.16 2.232 1.203-.058.036-1.332.778-1.318 2.322.014 1.844 1.616 2.458 1.634 2.466-.014.046-.256.875-.84 1.733zM14.15 5.758c.432-.542.746-1.294.652-2.058-.63.027-1.4.434-1.85.976-.407.484-.762 1.244-.666 1.977.704.056 1.42-.372 1.864-.895z"/>
+                  </svg>
+                  Android APK 下载
+                  <span className="text-xs text-black/50">(3.5 MB)</span>
+                </a>
+              </div>
+              <div className="shrink-0">
+                <div className="relative size-40 md:size-48">
+                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-purple-500/20 to-cyan-500/20 blur-xl" />
+                  <div className="relative size-full rounded-3xl bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="size-12 mx-auto mb-2 rounded-xl bg-white/20 flex items-center justify-center">
+                        <span className="text-white text-xl font-bold">AI</span>
+                      </div>
+                      <p className="text-white/90 font-semibold text-sm">AI 课程</p>
+                      <p className="text-white/40 text-[10px] mt-0.5">v1.0 · Android</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
       {/* ═══ QUICK START: Futuristic command center ═══ */}
       <section className="relative z-10 w-full px-4 py-8 md:px-8 md:pb-16 flex flex-col items-center">
@@ -720,10 +853,12 @@ function HomePage() {
             快速创建
           </motion.div>
           <h3 className="text-xl md:text-2xl text-white/90 font-semibold mb-2">
-            告诉我你的课堂想法
+            你的灵感，AI 来演绎
           </h3>
           <p className="text-sm text-white/30 max-w-lg mx-auto leading-relaxed">
-            输入任意课程主题、知识点或上传资料，AI 将为你生成完整的互动课堂
+            只需一个主题，AI 自动生成完整的互动课堂
+            <br />
+            配备 AI 教师与智能助教，让学习充满想象
           </p>
         </div>
 
@@ -957,7 +1092,7 @@ function HomePage() {
                         <InputGroupButton
                           size="icon-xs"
                           aria-label={t('classroom.clearSearch')}
-                          onMouseDown={(e) => e.preventDefault()}
+                          onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
                           onClick={() => {
                             setSearchQuery('');
                             searchInputRef.current?.focus();
