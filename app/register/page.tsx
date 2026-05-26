@@ -34,13 +34,13 @@ export default function RegisterPage() {
       toast.error('密码至少 3 个字符');
       return;
     }
-    const ok = await register(username.trim(), email.trim(), password);
-    if (ok) {
+    const result = await register(username.trim(), email.trim(), password);
+    if (result.ok) {
       await loginAsync(username.trim(), password);
       toast.success('注册成功！');
       router.push('/');
     } else {
-      toast.error('用户名已存在');
+      toast.error(result.error || '注册失败');
     }
   };
 

@@ -77,3 +77,6 @@ eval/outline-language/results/
 
 # e2e screenshot artifacts
 e2e/screenshots/
+
+# build artifacts
+next-build.tar.gz

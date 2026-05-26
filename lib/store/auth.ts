@@ -8,7 +8,7 @@ export interface AuthState {
   hydrated: boolean;
   hydrate: () => Promise<void>;
   login: (username: string, password: string) => Promise<boolean>;
-  register: (username: string, email: string, password: string) => Promise<boolean>;
+  register: (username: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -62,13 +62,10 @@ export const useAuthStore = create<AuthState>()(
             body: JSON.stringify({ username, email, password }),
           });
           const data = await res.json();
-          if (data.ok) {
-            // Auto-login after register
-            return true;
-          }
-          return false;
+          if (data.ok) return { ok: true };
+          return { ok: false, error: data.error || '注册失败' };
         } catch {
-          return false;
+          return { ok: false, error: '网络错误' };
         }
       },
 
