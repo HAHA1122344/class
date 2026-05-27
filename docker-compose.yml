@@ -5,9 +5,14 @@ services:
       - "3000:3000"
     env_file:
       - .env.local
+    environment:
+      - NODE_OPTIONS=--dns-result-order=ipv4first
+    dns:
+      - 223.5.5.5
+      - 114.114.114.114
     volumes:
-      # Optional: mount server-providers.yml for provider config
-      # - ./server-providers.yml:/app/server-providers.yml:ro
+      - ./.next/standalone/github/class:/app
+      - ./.next/static:/app/.next/static
       - openmaic-data:/app/data
     restart: unless-stopped
 
