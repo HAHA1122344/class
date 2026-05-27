@@ -11,6 +11,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "stop": "lsof -ti:3000 | xargs kill -9 2>/dev/null; echo '服务已停止'",
     "lint": "eslint",
     "check:i18n-keys": "node scripts/check-i18n-keys.mjs",
     "check": "prettier . --check",

@@ -853,7 +853,7 @@ function HomePage() {
             快速创建
           </motion.div>
           <h3 className="text-xl md:text-2xl text-white/90 font-semibold mb-2">
-            你的灵感，AI 来演绎
+            你的灵感，AI 来创造
           </h3>
           <p className="text-sm text-white/30 max-w-lg mx-auto leading-relaxed">
             只需一个主题，AI 自动生成完整的互动课堂

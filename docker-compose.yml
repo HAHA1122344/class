@@ -11,8 +11,6 @@ services:
       - 223.5.5.5
       - 114.114.114.114
     volumes:
-      - ./.next/standalone/github/class:/app
-      - ./.next/static:/app/.next/static
       - openmaic-data:/app/data
     restart: unless-stopped
 
